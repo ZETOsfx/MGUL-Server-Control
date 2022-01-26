@@ -1,7 +1,7 @@
 import json
 
 #список названий типов сервера (как в original .json)
-device = {'sev':'Сервер СЕВ', 'dbrobo':'РЎРµСЂРІРµСЂ dbrobo', 'webrobo':'Сервер webrobo', 'dokuwiki':'Сервер dokuwiki'}
+device = {'sev':'Сервер СЕВ', 'dbrobo':'Сервер dbrobo', 'webrobo':'Сервер webrobo', 'dokuwiki':'Сервер dokuwiki'}
 
 # текущее состояние для вывода осредненных значений
 TotalState = {'SWAP_Used':0, 'SWAP_Total':0, 'RAM_Used':0, 'RAM_Total':0,
@@ -10,7 +10,6 @@ TotalState = {'SWAP_Used':0, 'SWAP_Total':0, 'RAM_Used':0, 'RAM_Total':0,
               'HDD_xvda1_Used':0, 'HDD_xvda1_Total':0,
               'HDD_vg-root_Used':0, 'HDD_vg-root_Total':0}
 
-
 with open ("/Users/Gleb/Desktop/Python/log.json") as json_string:
     data = json.load(json_string)
 
@@ -18,7 +17,7 @@ with open ("/Users/Gleb/Desktop/Python/log.json") as json_string:
     for key in data:
         # chek selected device (ИМЕННО НА ВЫБРАННЫЙ ДЕВАЙС)
         uName = data[str(key)]['uName']
-        if (uName == 'Сервер webrobo') and (data[str(key)]['serial'] == '01'):
+        if (uName == device['webrobo']) and (data[str(key)]['serial'] == '01'):
 
             # Место обработки json (сложение для осреднения)
             print(data[str(key)]['Date'])
@@ -48,17 +47,27 @@ with open ("/Users/Gleb/Desktop/Python/log.json") as json_string:
             TotalState['HDD_xvda1_Total'] += int(data[str(key)]['data']['system_HDD_xvda1_Total'])
 
             # только для webrobo (дополнительные поля root)
-            if (uName == 'Сервер webrobo'):
+            if (uName == device['webrobo']):
                 TotalState['HDD_vg-root_Used'] += int(data[str(key)]['data']['system_HDD_vg-root_Used'])
                 TotalState['HDD_vg-root_Total'] += int(data[str(key)]['data']['system_HDD_vg-root_Total'])
 
-            i += 1
-
-            # check (проверка на диапазон времени + учесть расхождение в 1 минуту)
+            # check (проверка на диапазон времени)
             #  - метод перевода времени (с разбиением на часы-минуты)
             #  - при отсутсвии записи - заглушка
 
-            if (i == 6):
+            '''
+            hour = int(data[str(key)]['Date'][11] + data[str(key)]['Date'][12])
+            min = int(data[str(key)]['Date'][14] + data[str(key)]['Date'][15])
+
+            if (min % 5 == 0) and (min / 5 > i):
+                i += 2
+
+            if (min % 5 == 0) and (min / 5 == i):
+                i += 1
+            '''
+
+            #---------------------------------------------------------------------
+            if (i >= 6):
                 i = 0
 
                 # осреднение за 30 минут
@@ -86,7 +95,7 @@ with open ("/Users/Gleb/Desktop/Python/log.json") as json_string:
                 print('HDD (xvda1) Used: ' + str(TotalState['HDD_xvda1_Used']))
 
                 # если есть дополнительные поля
-                if (uName == 'Сервер webrobo'):
+                if (uName == device['webrobo']):
                     print('HDD (xvda1) Total: ' + str(TotalState['HDD_xvda1_Total']))
                     print('HDD (root) Used: ' + str(TotalState['HDD_vg-root_Used']))
                     print('HDD (root) Total: ' + str(TotalState['HDD_vg-root_Total']) + '\n')
@@ -96,28 +105,3 @@ with open ("/Users/Gleb/Desktop/Python/log.json") as json_string:
                 # занулить после вывода
                 for strr in TotalState.keys():
                     TotalState[strr] = 0
-
-
-            """
-            # Место обработки json
-            print(data[str(f_key)]['Date'])
-            print('SWAP Used: ' + data[str(f_key)]['data']['system_SWAP_Used'])
-            print('SWAP Total: ' + data[str(f_key)]['data']['system_SWAP_Total'])
-
-            print('RAM Used: ' + data[str(f_key)]['data']['system_RAM_Used'])
-            print('RAM Total: ' + data[str(f_key)]['data']['system_RAM_Total'])
-
-            print('Proc. Total: ' + data[str(f_key)]['data']['system_Processes_Total'])
-            print('Proc. Stopped: ' + data[str(f_key)]['data']['system_Processes_Stopped'])
-            print('Proc. Sleeping: ' + data[str(f_key)]['data']['system_Processes_Sleeping'])
-            print('Proc. Running: ' + data[str(f_key)]['data']['system_Processes_Running'])
-            print('Proc. Zombie: ' + data[str(f_key)]['data']['system_Processes_Zombie'])
-
-            print('LA1: ' + data[str(f_key)]['data']['system_LA1'])
-            print('LA5: ' + data[str(f_key)]['data']['system_LA5'])
-            print('LA15: ' + data[str(f_key)]['data']['system_LA15'])
-            print('IDLE: ' + data[str(f_key)]['data']['system_IDLE'])
-
-            print('HDD (xvda1) Used: ' + data[str(f_key)]['data']['system_HDD_xvda1_Used'])
-            print('HDD (xvda1) Total: ' + data[str(f_key)]['data']['system_HDD_xvda1_Total'] + '\n')
-                """
