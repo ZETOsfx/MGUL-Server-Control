@@ -1,6 +1,9 @@
-
 import json
 
+#список названий типов сервера (как в original .json)
+device = {'sev':'Сервер СЕВ', 'dbrobo':'РЎРµСЂРІРµСЂ dbrobo', 'webrobo':'Сервер webrobo', 'dokuwiki':'Сервер dokuwiki'}
+
+# текущее состояние для вывода осредненных значений
 TotalState = {'SWAP_Used':0, 'SWAP_Total':0, 'RAM_Used':0, 'RAM_Total':0,
               'Processes_Total':0, 'Processes_Stopped':0, 'Processes_Sleeping':0, 'Processes_Running':0, 'Processes_Zombie':0,
               'system_LA1':0, 'system_LA5':0, 'system_LA15':0, 'system_IDLE':0,
@@ -8,13 +11,16 @@ TotalState = {'SWAP_Used':0, 'SWAP_Total':0, 'RAM_Used':0, 'RAM_Total':0,
               'HDD_vg-root_Used':0, 'HDD_vg-root_Total':0}
 
 
-with open ("/Users/Gleb/Desktop/log.json") as json_string:
+with open ("/Users/Gleb/Desktop/Python/log.json") as json_string:
     data = json.load(json_string)
 
     i = 0
     for key in data:
-        if (data[str(key)]['uName'] == 'РЎРµСЂРІРµСЂ РЎР•Р’') and (data[str(key)]['serial'] == '01'): # Сервер CEB 01
-            # Место обработки json
+        # chek selected device (ИМЕННО НА ВЫБРАННЫЙ ДЕВАЙС)
+        uName = data[str(key)]['uName']
+        if (uName == 'Сервер webrobo') and (data[str(key)]['serial'] == '01'):
+
+            # Место обработки json (сложение для осреднения)
             print(data[str(key)]['Date'])
 
             TotalState['SWAP_Used'] += int(data[str(key)]['data']['system_SWAP_Used'])
@@ -32,10 +38,19 @@ with open ("/Users/Gleb/Desktop/log.json") as json_string:
             TotalState['system_LA1'] += float(data[str(key)]['data']['system_LA1'])
             TotalState['system_LA5'] += float(data[str(key)]['data']['system_LA5'])
             TotalState['system_LA15'] += float(data[str(key)]['data']['system_LA15'])
-            TotalState['system_IDLE'] += float(data[str(key)]['data']['system_IDLE'])
+
+            try:
+                TotalState['system_IDLE'] += float(data[str(key)]['data']['system_IDLE'])
+            except:
+                TotalState['system_IDLE'] += 100.0
 
             TotalState['HDD_xvda1_Used'] += int(data[str(key)]['data']['system_HDD_xvda1_Used'])
             TotalState['HDD_xvda1_Total'] += int(data[str(key)]['data']['system_HDD_xvda1_Total'])
+
+            # только для webrobo (дополнительные поля root)
+            if (uName == 'Сервер webrobo'):
+                TotalState['HDD_vg-root_Used'] += int(data[str(key)]['data']['system_HDD_vg-root_Used'])
+                TotalState['HDD_vg-root_Total'] += int(data[str(key)]['data']['system_HDD_vg-root_Total'])
 
             i += 1
 
@@ -46,59 +61,42 @@ with open ("/Users/Gleb/Desktop/log.json") as json_string:
             if (i == 6):
                 i = 0
 
-                #for key in TotalState.keys():
-                #    TotalState[key] /= 6
-
-                TotalState['SWAP_Used'] /= 6
-                TotalState['SWAP_Total'] /= 6
-
-                TotalState['RAM_Used'] /= 6
-                TotalState['RAM_Total'] /= 6
-
-                TotalState['Processes_Total'] /= 6
-                TotalState['Processes_Stopped'] /= 6
-                TotalState['Processes_Sleeping'] /= 6
-                TotalState['Processes_Running'] /= 6
-                TotalState['Processes_Zombie'] /= 6
-
-                TotalState['system_LA1'] /= 6
-                TotalState['system_LA5'] /= 6
-                TotalState['system_LA15'] /= 6
-                TotalState['system_IDLE'] /= 6
-
-                TotalState['HDD_xvda1_Used'] /= 6
-                TotalState['HDD_xvda1_Total'] /= 6
+                # осреднение за 30 минут
+                for key in TotalState.keys():
+                    TotalState[key] /= 6
 
                 # ----------------------------------------------------------------
+                print('SWAP Used: ' + str(TotalState['SWAP_Used']))
+                print('SWAP Total: ' + str(TotalState['SWAP_Total']))
 
-                print('SWAP Used: ' + TotalState['SWAP_Used'])
-                print('SWAP Total: ' + TotalState['SWAP_Total'])
+                print('RAM Used: ' + str(TotalState['RAM_Used']))
+                print('RAM Total: ' + str(TotalState['RAM_Total']))
 
-                print('RAM Used: ' + TotalState['RAM_Used'])
-                print('RAM Total: ' + TotalState['RAM_Total'])
+                print('Proc. Total: ' + str(TotalState['Processes_Total']))
+                print('Proc. Stopped: ' + str(TotalState['Processes_Stopped']))
+                print('Proc. Sleeping: ' + str(TotalState['Processes_Sleeping']))
+                print('Proc. Running: ' + str(TotalState['Processes_Running']))
+                print('Proc. Zombie: ' + str(TotalState['Processes_Zombie']))
 
-                print('Proc. Total: ' + TotalState['Processes_Total'])
-                print('Proc. Stopped: ' + TotalState['Processes_Stopped'])
-                print('Proc. Sleeping: ' + TotalState['Processes_Sleeping'])
-                print('Proc. Running: ' + TotalState['Processes_Running'])
-                print('Proc. Zombie: ' + TotalState['Processes_Zombie'])
+                print('LA1: ' + str(TotalState['system_LA1']))
+                print('LA5: ' + str(TotalState['system_LA5']))
+                print('LA15: ' + str(TotalState['system_LA15']))
+                print('IDLE: ' + str(TotalState['system_IDLE']))
 
-                print('LA1: ' + TotalState['system_LA1'])
-                print('LA5: ' + TotalState['system_LA5'])
-                print('LA15: ' + TotalState['system_LA15'])
-                print('IDLE: ' + TotalState['system_IDLE'])
+                print('HDD (xvda1) Used: ' + str(TotalState['HDD_xvda1_Used']))
 
-                print('HDD (xvda1) Used: ' + TotalState['HDD_xvda1_Used'])
-                print('HDD (xvda1) Total: ' + TotalState['HDD_xvda1_Total'] + '\n')
+                # если есть дополнительные поля
+                if (uName == 'Сервер webrobo'):
+                    print('HDD (xvda1) Total: ' + str(TotalState['HDD_xvda1_Total']))
+                    print('HDD (root) Used: ' + str(TotalState['HDD_vg-root_Used']))
+                    print('HDD (root) Total: ' + str(TotalState['HDD_vg-root_Total']) + '\n')
+                else:
+                    print('HDD (xvda1) Total: ' + str(TotalState['HDD_xvda1_Total']) + '\n')
 
-                    # занулить после вывода
-                for str in TotalState.keys():
-                    TotalState[str] = 0
+                # занулить после вывода
+                for strr in TotalState.keys():
+                    TotalState[strr] = 0
 
-
-
-            #print(data[str(key)]['data']['system_HDD_vg-root_Used'])
-            #print(data[str(key)]['data']['system_HDD_vg-root_Total'] + '\n')
 
             """
             # Место обработки json
