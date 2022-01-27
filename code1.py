@@ -13,91 +13,156 @@ TotalState = {'SWAP_Used':0, 'SWAP_Total':0, 'RAM_Used':0, 'RAM_Total':0,
               'HDD_xvda1_Used':0, 'HDD_xvda1_Total':0,
               'HDD_vg-root_Used':0, 'HDD_vg-root_Total':0}
 
+# метод добавления ошибок с соответствующим сообщением
 def _addError(s_hour, s_min, str_Err):
-    if (s_min == 25):
+    if (s_min >= 25 and s_min <= 30):
         ErrorList.append(str(s_hour) + ':00 - ' + str(s_hour) + ':30 : ' + str_Err)
-    elif (s_min == 55):
+    elif (s_min >= 55 and s_min <= 59):
         ErrorList.append(str(s_hour) + ':30 - ' + str(s_hour + 1) + ':00 : ' + str_Err)
     return
 
-with open ("/Users/Gleb/Desktop/Python/log.json") as json_string:
+# вся обработка по открытии файла (.json)
+with open ("/Users/Gleb/Desktop/Python/fall.json") as json_string:
     data = json.load(json_string)
 
     i5 = 0  # записи во время, где число минут кратно 5
     ir = 0  # все остальные записи с рандомным временем
+    last_min = 0
+    twice_5 = False     # проверка на избыточные граничные записи
+    twice = False       # проверка на дублирование записей в целом
+    extra = False       # флаг допуска к условию пересчета и печати
+    skip = False        # флаг обхода дополнительной проверки
+    GO_IN = False       # флаг последнего вхождения для печати оставшейся информации
+    am_pm = False
     for key in data:
         # chek selected device (ИМЕННО НА ВЫБРАННЫЙ ДЕВАЙС)
         uName = data[str(key)]['uName']
-        if (uName == device['webrobo']) and (data[str(key)]['serial'] == '01'):
+        key_copy = int(key) + 1
 
-            # Место обработки json (сложение для осреднения)
-            print(data[str(key)]['Date'])
+        # проверка наличия след. записи (конец файла .json)
+        try:
+            data[str(key_copy)]['uName']
+        except:
+            # флаги всех обходов для последнего вхождения и печати
+            GO_IN = True
+            twice_5 = False
+            extra = True
+            skip = True
 
-            TotalState['SWAP_Used'] += int(data[str(key)]['data']['system_SWAP_Used'])
-            TotalState['SWAP_Total'] += int(data[str(key)]['data']['system_SWAP_Total'])
+        # определение записей необходимого девайса
+        if (uName == device['dbrobo'] and data[str(key)]['serial'] == '01') or GO_IN:
+            # время записи (не для последнего вхождения)
+            if not GO_IN:
+                hour = int(data[str(key)]['Date'][11] + data[str(key)]['Date'][12])
+                min = int(data[str(key)]['Date'][14] + data[str(key)]['Date'][15])
 
-            TotalState['RAM_Used'] += int(data[str(key)]['data']['system_RAM_Used'])
-            TotalState['RAM_Total'] += int(data[str(key)]['data']['system_RAM_Total'])
+            # срочная печать данных за интервал, который уже прошел
+            if (min >= 30 and am_pm == False) or (min <= 30 and am_pm == True):
+                am_pm = not am_pm
+                extra = True
+                skip = True
 
-            TotalState['Processes_Total'] += int(data[str(key)]['data']['system_Processes_Total'])
-            TotalState['Processes_Stopped'] += int(data[str(key)]['data']['system_Processes_Stopped'])
-            TotalState['Processes_Sleeping'] += int(data[str(key)]['data']['system_Processes_Sleeping'])
-            TotalState['Processes_Running'] += int(data[str(key)]['data']['system_Processes_Running'])
-            TotalState['Processes_Zombie'] += int(data[str(key)]['data']['system_Processes_Zombie'])
+            # дублирование записей в промежутке времени
+            twice = not last_min == min
+            last_min = min
 
-            TotalState['system_LA1'] += float(data[str(key)]['data']['system_LA1'])
-            TotalState['system_LA5'] += float(data[str(key)]['data']['system_LA5'])
-            TotalState['system_LA15'] += float(data[str(key)]['data']['system_LA15'])
+            # повторное вхождение
+            if twice_5 and ((min >= 25 and min < 30) or (min >= 55 and min <= 59)):
+                extra = True
+                # ... дополнение к повтору записей (перехватить лишние записи на границе)
+                skip = False
+            elif twice_5:
+                # дублирование на границе завершено (пора печатать значения)
+                twice_5 = False
+                extra = True
+                skip = True
 
-            try:
-                TotalState['system_IDLE'] += float(data[str(key)]['data']['system_IDLE'])
-            except:
-                TotalState['system_IDLE'] += 100.0
+            # подсчет только "правильных" записей
+            if (not GO_IN):
+                if (min % 5 == 0):
+                    i5 += 1
+                else:
+                    ir += 1
 
-            TotalState['HDD_xvda1_Used'] += int(data[str(key)]['data']['system_HDD_xvda1_Used'])
-            TotalState['HDD_xvda1_Total'] += int(data[str(key)]['data']['system_HDD_xvda1_Total'])
+            if (not skip):
+                print(data[str(key)]['Date'])
 
-            # только для webrobo (дополнительные поля root)
-            if (uName == device['webrobo']):
-                TotalState['HDD_vg-root_Used'] += int(data[str(key)]['data']['system_HDD_vg-root_Used'])
-                TotalState['HDD_vg-root_Total'] += int(data[str(key)]['data']['system_HDD_vg-root_Total'])
+            if not extra:
+                # Место обработки json (сложение для осреднения)
+                TotalState['SWAP_Used'] += int(data[str(key)]['data']['system_SWAP_Used'])
+                TotalState['SWAP_Total'] += int(data[str(key)]['data']['system_SWAP_Total'])
 
-            # check (проверка на диапазон времени)
-            #  - метод перевода времени (с разбиением на часы-минуты)
-            #  - при отсутсвии записи - заглушка
+                TotalState['RAM_Used'] += int(data[str(key)]['data']['system_RAM_Used'])
+                TotalState['RAM_Total'] += int(data[str(key)]['data']['system_RAM_Total'])
 
+                try:
+                    TotalState['Processes_Total'] += int(data[str(key)]['data']['system_Processes_Total'])
+                    TotalState['Processes_Stopped'] += int(data[str(key)]['data']['system_Processes_Stopped'])
+                    TotalState['Processes_Sleeping'] += int(data[str(key)]['data']['system_Processes_Sleeping'])
+                    TotalState['Processes_Running'] += int(data[str(key)]['data']['system_Processes_Running'])
+                    TotalState['Processes_Zombie'] += int(data[str(key)]['data']['system_Processes_Zombie'])
+                except:
+                    TotalState['Processes_Total'] += 0
+                    TotalState['Processes_Stopped'] += 0
+                    TotalState['Processes_Sleeping'] += 0
+                    TotalState['Processes_Running'] += 0
+                    TotalState['Processes_Zombie'] += 0
 
-            hour = int(data[str(key)]['Date'][11] + data[str(key)]['Date'][12])
-            min = int(data[str(key)]['Date'][14] + data[str(key)]['Date'][15])
+                TotalState['system_LA1'] += float(data[str(key)]['data']['system_LA1'])
+                TotalState['system_LA5'] += float(data[str(key)]['data']['system_LA5'])
+                TotalState['system_LA15'] += float(data[str(key)]['data']['system_LA15'])
 
-            # подсчет только "правильных записей"
-            if (min % 5 == 0):
-                i5 += 1
-            else:
-                ir += 1
+                try:
+                    TotalState['system_IDLE'] += float(data[str(key)]['data']['system_IDLE'])
+                except:
+                    TotalState['system_IDLE'] += 100.0
+
+                TotalState['HDD_xvda1_Used'] += int(data[str(key)]['data']['system_HDD_xvda1_Used'])
+                TotalState['HDD_xvda1_Total'] += int(data[str(key)]['data']['system_HDD_xvda1_Total'])
+
+                # только для webrobo (дополнительные поля root)
+                if (uName == device['webrobo']):
+                    TotalState['HDD_vg-root_Used'] += int(data[str(key)]['data']['system_HDD_vg-root_Used'])
+                    TotalState['HDD_vg-root_Total'] += int(data[str(key)]['data']['system_HDD_vg-root_Total'])
+
             #---------------------------------------------------------------------
-            if (min == 25) or (min == 55):  # вывод среднего за 30 минут
+            if ((min == 25) or (min == 55)) or extra:  # вывод среднего за 30 минут
+                extra = False
+                twice_5 = True
 
-                if (i5 == 6) and (ir == 0):
-                    strErr = "Все в порядке."
-                elif (i5 + ir == 6):
-                    strErr = "Ненормальная работа: остановка или сбои в работе. Записи в нужном числе."
-                    _addError(hour, min, strErr)
-                elif (i5 + ir > 6):
-                    strErr = "Присутствуют лишние записи: возможно, сервер был перезагружен."
-                    _addError(hour, min, strErr)
-                elif (i5 + i6 < 6):
-                    strErr = "Остановка работы на продолжительное время. Записи частично утеряны."
-                    _addError(hour, min, strErr)
+                # flag
+                if (not skip):
+                    continue
+                skip = False
 
-                print(strErr)
+                twice_5 = False
+                if not GO_IN:
+                    if (i5 == 6) and (ir == 0):
+                        strErr = "Все в порядке."
+                    elif (i5 + ir == 6):
+                        strErr = "Ненормальная работа: остановка или сбои в работе. Записи в нужном числе."
+                        _addError(hour, min, strErr)
+                    elif (i5 + ir < 6 and i5 + ir > 0):
+                        strErr = "Остановка работы на продолжительное время. Записи частично утеряны."
+                        _addError(hour, min, strErr)
+                    elif i5 + ir == 0:
+                        strErr = "Сервер не работал."
+                        _addError(hour, min, strErr)
 
-                i5 = 0
-                ir = 0
+                    if twice:
+                        _addError(hour, min, 'Дублирование записей.')
+                    elif (i5 + ir > 6):
+                        strErr = "Присутствуют лишние записи: возможно, сервер был перезагружен."
+                        _addError(hour, min, strErr)
+                    twice = False
+
 
                 # осреднение за 30 минут
                 for key in TotalState.keys():
-                    TotalState[key] /= 6
+                    TotalState[key] /= (i5 + ir)
+
+                i5 = 0
+                ir = 0
 
                 # ----------------------------------------------------------------
                 print('SWAP Used: ' + str(TotalState['SWAP_Used']))
@@ -130,6 +195,8 @@ with open ("/Users/Gleb/Desktop/Python/log.json") as json_string:
                 # занулить после вывода
                 for strr in TotalState.keys():
                     TotalState[strr] = 0
+
+        GO_IN = False
 
     # оформление и вывод списка ошибок
     if (len(ErrorList) > 1):
