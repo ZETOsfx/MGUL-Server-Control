@@ -1,5 +1,8 @@
 import json
 
+# список ошибок (временные промежутки аномалий на сервере)
+ErrorList = ['Time codes of anomaly: ']
+
 #список названий типов сервера (как в original .json)
 device = {'sev':'Сервер СЕВ', 'dbrobo':'Сервер dbrobo', 'webrobo':'Сервер webrobo', 'dokuwiki':'Сервер dokuwiki'}
 
@@ -10,10 +13,18 @@ TotalState = {'SWAP_Used':0, 'SWAP_Total':0, 'RAM_Used':0, 'RAM_Total':0,
               'HDD_xvda1_Used':0, 'HDD_xvda1_Total':0,
               'HDD_vg-root_Used':0, 'HDD_vg-root_Total':0}
 
+def _addError(s_hour, s_min, str_Err):
+    if (s_min == 25):
+        ErrorList.append(str(s_hour) + ':00 - ' + str(s_hour) + ':30 : ' + str_Err)
+    elif (s_min == 55):
+        ErrorList.append(str(s_hour) + ':30 - ' + str(s_hour + 1) + ':00 : ' + str_Err)
+    return
+
 with open ("/Users/Gleb/Desktop/Python/log.json") as json_string:
     data = json.load(json_string)
 
-    i = 0
+    i5 = 0  # записи во время, где число минут кратно 5
+    ir = 0  # все остальные записи с рандомным временем
     for key in data:
         # chek selected device (ИМЕННО НА ВЫБРАННЫЙ ДЕВАЙС)
         uName = data[str(key)]['uName']
@@ -55,20 +66,34 @@ with open ("/Users/Gleb/Desktop/Python/log.json") as json_string:
             #  - метод перевода времени (с разбиением на часы-минуты)
             #  - при отсутсвии записи - заглушка
 
-            '''
+
             hour = int(data[str(key)]['Date'][11] + data[str(key)]['Date'][12])
             min = int(data[str(key)]['Date'][14] + data[str(key)]['Date'][15])
 
-            if (min % 5 == 0) and (min / 5 > i):
-                i += 2
-
-            if (min % 5 == 0) and (min / 5 == i):
-                i += 1
-            '''
-
+            # подсчет только "правильных записей"
+            if (min % 5 == 0):
+                i5 += 1
+            else:
+                ir += 1
             #---------------------------------------------------------------------
-            if (i >= 6):
-                i = 0
+            if (min == 25) or (min == 55):  # вывод среднего за 30 минут
+
+                if (i5 == 6) and (ir == 0):
+                    strErr = "Все в порядке."
+                elif (i5 + ir == 6):
+                    strErr = "Ненормальная работа: остановка или сбои в работе. Записи в нужном числе."
+                    _addError(hour, min, strErr)
+                elif (i5 + ir > 6):
+                    strErr = "Присутствуют лишние записи: возможно, сервер был перезагружен."
+                    _addError(hour, min, strErr)
+                elif (i5 + i6 < 6):
+                    strErr = "Остановка работы на продолжительное время. Записи частично утеряны."
+                    _addError(hour, min, strErr)
+
+                print(strErr)
+
+                i5 = 0
+                ir = 0
 
                 # осреднение за 30 минут
                 for key in TotalState.keys():
@@ -105,3 +130,12 @@ with open ("/Users/Gleb/Desktop/Python/log.json") as json_string:
                 # занулить после вывода
                 for strr in TotalState.keys():
                     TotalState[strr] = 0
+
+    # оформление и вывод списка ошибок
+    if (len(ErrorList) > 1):
+        ErrorList.append('Конец списка ошибок.')
+    else:
+        ErrorList.append('Ошибок в работе не выявлено.')
+
+    for list in ErrorList:
+        print(list)
