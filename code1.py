@@ -15,14 +15,21 @@ TotalState = {'SWAP_Used':0, 'SWAP_Total':0, 'RAM_Used':0, 'RAM_Total':0,
 
 # метод добавления ошибок с соответствующим сообщением
 def _addError(s_hour, s_min, str_Err):
+    ss_hour = str(s_hour)
+    s1_hour = str(s_hour + 1)
+    if int(s_hour) < 10:
+        ss_hour = '0' + str(s_hour)
+        s1_hour = '0' + str(s_hour + 1)
+        if int(s_hour) == 9:
+            s1_hour = str(s_hour + 1)
     if (s_min >= 25 and s_min <= 30):
-        ErrorList.append(str(s_hour) + ':00 - ' + str(s_hour) + ':30 : ' + str_Err)
+        ErrorList.append(ss_hour + ':00 - ' + ss_hour + ':30 -> ' + str_Err)
     elif (s_min >= 55 and s_min <= 59):
-        ErrorList.append(str(s_hour) + ':30 - ' + str(s_hour + 1) + ':00 : ' + str_Err)
+        ErrorList.append(ss_hour + ':30 - ' + s1_hour + ':00 -> ' + str_Err)
     return
 
 # вся обработка по открытии файла (.json)
-with open ("/Users/Gleb/Desktop/Python/fall.json") as json_string:
+with open ("/Users/Gleb/Desktop/Python/log.json") as json_string:
     data = json.load(json_string)
 
     i5 = 0              # записи во время, где число минут кратно 5
@@ -66,7 +73,7 @@ with open ("/Users/Gleb/Desktop/Python/fall.json") as json_string:
                 twice_5 = False
 
             # дублирование записей в промежутке времени
-            twice = not last_min == min
+            twice = (last_min == min)
             last_min = min
 
             # повторное вхождение
@@ -141,15 +148,16 @@ with open ("/Users/Gleb/Desktop/Python/fall.json") as json_string:
 
                 twice_5 = False
                 if not GO_IN:
-                    if (i5 == 6) and (ir == 0):
+                    if (i5 == 5) and (ir == 0):
                         strErr = "Все в порядке."
-                    elif (i5 + ir == 6):
+                        # _addError(hour, min, strErr) # check
+                    elif (i5 + ir == 5):
                         strErr = "Ненормальная работа: остановка или сбои в работе. Записи в нужном числе."
                         _addError(hour, min, strErr)
-                    elif (i5 + ir < 6 and i5 + ir > 0):
-                        strErr = "Остановка работы на продолжительное время. Записи частично утеряны."
+                    elif (i5 + ir < 5 and i5 + ir > 0):
+                        strErr = "Остановка работы на некоторое время. Записи частично утеряны."
                         _addError(hour, min, strErr)
-                    elif i5 + ir == 0:
+                    elif i5 + ir == 0: # non work
                         strErr = "Сервер не работал."
                         _addError(hour, min, strErr)
 
