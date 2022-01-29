@@ -25,15 +25,16 @@ def _addError(s_hour, s_min, str_Err):
 with open ("/Users/Gleb/Desktop/Python/fall.json") as json_string:
     data = json.load(json_string)
 
-    i5 = 0  # записи во время, где число минут кратно 5
-    ir = 0  # все остальные записи с рандомным временем
+    i5 = 0              # записи во время, где число минут кратно 5
+    ir = 0              # все остальные записи с рандомным временем
     last_min = 0
     twice_5 = False     # проверка на избыточные граничные записи
     twice = False       # проверка на дублирование записей в целом
     extra = False       # флаг допуска к условию пересчета и печати
     skip = False        # флаг обхода дополнительной проверки
     GO_IN = False       # флаг последнего вхождения для печати оставшейся информации
-    am_pm = False
+    am_pm = False       # перевод формата для перехода между диапазонами
+
     for key in data:
         # chek selected device (ИМЕННО НА ВЫБРАННЫЙ ДЕВАЙС)
         uName = data[str(key)]['uName']
@@ -55,12 +56,14 @@ with open ("/Users/Gleb/Desktop/Python/fall.json") as json_string:
             if not GO_IN:
                 hour = int(data[str(key)]['Date'][11] + data[str(key)]['Date'][12])
                 min = int(data[str(key)]['Date'][14] + data[str(key)]['Date'][15])
+                minNext = int(data[str(int(key) + 1)]['Date'][14] + data[str(int(key) + 1)]['Date'][15])
 
             # срочная печать данных за интервал, который уже прошел
-            if (min >= 30 and am_pm == False) or (min <= 30 and am_pm == True):
+            if (minNext >= 30 and am_pm == False) or (minNext < 30 and am_pm == True):
                 am_pm = not am_pm
                 extra = True
                 skip = True
+                twice_5 = False
 
             # дублирование записей в промежутке времени
             twice = not last_min == min
@@ -78,12 +81,13 @@ with open ("/Users/Gleb/Desktop/Python/fall.json") as json_string:
                 skip = True
 
             # подсчет только "правильных" записей
-            if (not GO_IN):
+            if (not GO_IN and not extra):
                 if (min % 5 == 0):
                     i5 += 1
                 else:
                     ir += 1
 
+            # вывод времени записей, включенных в диапазонный подсчет
             if (not skip):
                 print(data[str(key)]['Date'])
 
