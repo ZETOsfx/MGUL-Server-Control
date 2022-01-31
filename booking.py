@@ -36,9 +36,11 @@ def create_excel():
         _warn = PatternFill(start_color = "fff2cc", end_color = "fff2cc", fill_type = "solid") # жёлтый
         _err = PatternFill(start_color = "f4cccc", end_color = "f4cccc", fill_type = "solid") # красный
         # Жирый шрифт
+        global _bold
         _bold = Font(name='Calibri', bold=True, size = 14, color = "000000")
         # Линия границы ячейки
         #_selfbord = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
+        global _selfbord
         _selfbord = Border(left=Side(style='medium'), right=Side(style='medium'), top=Side(style='medium'), bottom=Side(style='medium'))
         # Пустое место, где пересекаются времен. интервалы и состояние
         cur_sheet.merge_cells('B2:B3')
@@ -71,8 +73,7 @@ def create_excel():
                 'RAM Used', 'RAM Total', 'RAM %',
                 'Proc. Total', 'Proc. Stopped', 'Proc. Sleeping', 'Proc. Running', 'Proc. Zombie',
                 'LA1', 'LA5', 'LA15', 'IDLE',
-                'HDD (xvda1) Used', 'HDD (xvda1) Total', 'HDD (xvda1) %',
-                'HDD (root) Used', 'HDD (root) Total', 'HDD (root) %']
+                'HDD (xvda1) Used', 'HDD (xvda1) Total', 'HDD (xvda1) %']
 
         #-- ЗАПИСЬ ИНФ. В СТОЛБЕЦ --
         for i, row in enumerate(rows, 1):
@@ -84,7 +85,7 @@ def create_excel():
 
         #-- УСТАНОВКА ГРАНИЦ --
         for i in range(3, 17):
-            for j in range(4, 26):
+            for j in range(4, 23):
                 cur_sheet.cell(row = j, column = i).alignment = Alignment(horizontal='center') # выравнивание по центру
                 cur_sheet.cell(row = j, column = i).border = _selfbord # граница ячейки
 
@@ -95,7 +96,3 @@ def create_excel():
         #cur_sheet.cell(row = 7, column = 5).fill = _warn
 
     return book
-
-#book123 = create_excel()
-#book123.save('work.xlsx')
-#book123.close()

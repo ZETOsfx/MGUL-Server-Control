@@ -1,40 +1,30 @@
 import json
 import booking
+import openpyxl
+from openpyxl.styles import *
+from openpyxl.utils.cell import get_column_letter
+
+_bold = Font(name='Calibri', bold=True, size = 14, color = "000000")
+_selfbord = Border(left=Side(style='medium'), right=Side(style='medium'), top=Side(style='medium'), bottom=Side(style='medium'))
 
 # таблица для вывода
 book = booking.create_excel()
 
-# список ошибок (временные промежутки аномалий на сервере)
-ErrorList = ['Time codes of anomaly: ']
+# АБОБА
+def toFixed(numObj, digits = 0):
+    return f"{numObj:.{digits}f}"
 
-#список названий типов сервера (как в original .json)
-device = {'sev':'Сервер СЕВ', 'dbrobo':'Сервер dbrobo', 'webrobo':'Сервер webrobo', 'dokuwiki':'Сервер dokuwiki'}
-
-# текущее состояние для вывода осредненных значений
-TotalState = {'SWAP_Used':0, 'SWAP_Total':0, 'RAM_Used':0, 'RAM_Total':0,
-              'Processes_Total':0, 'Processes_Stopped':0, 'Processes_Sleeping':0, 'Processes_Running':0, 'Processes_Zombie':0,
-              'system_LA1':0, 'system_LA5':0, 'system_LA15':0, 'system_IDLE':0,
-              'HDD_xvda1_Used':0, 'HDD_xvda1_Total':0,
-              'HDD_vg-root_Used':0, 'HDD_vg-root_Total':0}
-
-# метод добавления ошибок с соответствующим сообщением
-def _addError(s_hour, s_min, str_Err):
-    ss_hour = str(s_hour)
-    s1_hour = str(s_hour + 1)
-    if int(s_hour) < 10:
-        ss_hour = '0' + str(s_hour)
-        s1_hour = '0' + str(s_hour + 1)
-        if int(s_hour) == 9:
-            s1_hour = str(s_hour + 1)
-    if (s_min >= 25 and s_min <= 30):
-        ErrorList.append(ss_hour + ':00 - ' + ss_hour + ':30 -> ' + str_Err)
-    elif (s_min >= 55 and s_min <= 59):
-        ErrorList.append(ss_hour + ':30 - ' + s1_hour + ':00 -> ' + str_Err)
-    return
-
-# вся обработка по открытии файла (.json)
-with open ("/Users/Gleb/Desktop/Python/log.json") as json_string:
-    data = json.load(json_string)
+def startValues():
+    global i5               # записи во время, где число минут кратно 5
+    global ir               # все остальные записи с рандомным временем
+    global last_min     # последняя минута
+    global twice_5      # проверка на избыточные граничные записи
+    global twice        # проверка на дублирование записей в целом
+    global extra        # флаг допуска к условию пересчета и печати
+    global skip         # флаг обхода дополнительной проверки
+    global GO_IN        # флаг последнего вхождения для печати оставшейся информации
+    global am_pm        # перевод формата для перехода между диапазонами
+    global interval     # не ну это ты понял
 
     i5 = 0              # записи во время, где число минут кратно 5
     ir = 0              # все остальные записи с рандомным временем
@@ -45,12 +35,23 @@ with open ("/Users/Gleb/Desktop/Python/log.json") as json_string:
     skip = False        # флаг обхода дополнительной проверки
     GO_IN = False       # флаг последнего вхождения для печати оставшейся информации
     am_pm = False       # перевод формата для перехода между диапазонами
+    interval = 3
+def CoCycleOfVeryFastObrabotka(_dev, _ser):
+    global i5               # записи во время, где число минут кратно 5
+    global ir               # все остальные записи с рандомным временем
+    global last_min     # последняя минута
+    global twice_5      # проверка на избыточные граничные записи
+    global twice        # проверка на дублирование записей в целом
+    global extra        # флаг допуска к условию пересчета и печати
+    global skip         # флаг обхода дополнительной проверки
+    global GO_IN        # флаг последнего вхождения для печати оставшейся информации
+    global am_pm        # перевод формата для перехода между диапазонами
+    global interval     # не ну это ты понял
 
     for key in data:
         # chek selected device (ИМЕННО НА ВЫБРАННЫЙ ДЕВАЙС)
         uName = data[str(key)]['uName']
         key_copy = int(key) + 1
-
         # проверка наличия след. записи (конец файла .json)
         try:
             data[str(key_copy)]['uName']
@@ -60,9 +61,24 @@ with open ("/Users/Gleb/Desktop/Python/log.json") as json_string:
             twice_5 = False
             extra = True
             skip = True
-
         # определение записей необходимого девайса
-        if (uName == device['dbrobo'] and data[str(key)]['serial'] == '01') or GO_IN:
+        if (uName == device[_dev] and data[str(key)]['serial'] == _ser) or GO_IN:
+
+            # переключаем лист на нужный для каждого сревера
+            if uName == device['dbrobo']:
+                book.active = 0
+            elif uName == device['webrobo']:
+                book.active = 1
+            elif uName == device['dokuwiki']:
+                book.active = 2
+            elif uName == device['sev']:
+                if data[str(key)]['serial'] == '01':
+                    book.active = 3
+                elif data[str(key)]['serial'] == '02':
+                    book.active = 4
+                elif data[str(key)]['serial'] == '03':
+                    book.active = 5
+
             # время записи (не для последнего вхождения)
             if not GO_IN:
                 hour = int(data[str(key)]['Date'][11] + data[str(key)]['Date'][12])
@@ -98,18 +114,17 @@ with open ("/Users/Gleb/Desktop/Python/log.json") as json_string:
                     i5 += 1
                 else:
                     ir += 1
-
-            # вывод времени записей, включенных в диапазонный подсчет
-            if (not skip):
-                print(data[str(key)]['Date'])
-
+            # Место обработки json (сложение для осреднения)
             if not extra:
-                # Место обработки json (сложение для осреднения)
+                # тоталы не изменять
+                # округление явно целых величин
+                # проверить повторно подсчет среднего значения
+
                 TotalState['SWAP_Used'] += int(data[str(key)]['data']['system_SWAP_Used'])
-                TotalState['SWAP_Total'] += int(data[str(key)]['data']['system_SWAP_Total'])
+                TotalState['SWAP_Total'] = int(data[str(key)]['data']['system_SWAP_Total'])
 
                 TotalState['RAM_Used'] += int(data[str(key)]['data']['system_RAM_Used'])
-                TotalState['RAM_Total'] += int(data[str(key)]['data']['system_RAM_Total'])
+                TotalState['RAM_Total'] = int(data[str(key)]['data']['system_RAM_Total'])
 
                 try:
                     TotalState['Processes_Total'] += int(data[str(key)]['data']['system_Processes_Total'])
@@ -134,12 +149,12 @@ with open ("/Users/Gleb/Desktop/Python/log.json") as json_string:
                     TotalState['system_IDLE'] += 100.0
 
                 TotalState['HDD_xvda1_Used'] += int(data[str(key)]['data']['system_HDD_xvda1_Used'])
-                TotalState['HDD_xvda1_Total'] += int(data[str(key)]['data']['system_HDD_xvda1_Total'])
+                TotalState['HDD_xvda1_Total'] = int(data[str(key)]['data']['system_HDD_xvda1_Total'])
 
                 # только для webrobo (дополнительные поля root)
                 if (uName == device['webrobo']):
                     TotalState['HDD_vg-root_Used'] += int(data[str(key)]['data']['system_HDD_vg-root_Used'])
-                    TotalState['HDD_vg-root_Total'] += int(data[str(key)]['data']['system_HDD_vg-root_Total'])
+                    TotalState['HDD_vg-root_Total'] = int(data[str(key)]['data']['system_HDD_vg-root_Total'])
 
             #---------------------------------------------------------------------
             if ((min == 25) or (min == 55)) or extra:  # вывод среднего за 30 минут
@@ -176,51 +191,175 @@ with open ("/Users/Gleb/Desktop/Python/log.json") as json_string:
 
                 # осреднение за 30 минут
                 for key in TotalState.keys():
-                    if (i5 + ir <= 0):
-                        TotalState[key] = 0
-                    else:
-                        TotalState[key] /= (i5 + ir)
+                    if key != 'SWAP_Total' and key != 'RAM_Total' and key != 'HDD_xvda1_Total' and key != 'HDD_vg-root_Total':
+                        if (i5 + ir <= 0):
+                            TotalState[key] = 0
+                        else:
+                            TotalState[key] /= (i5 + ir)
 
                 i5 = 0
                 ir = 0
 
                 # ----------------------------------------------------------------
                 # можно подправить вывод
+                book.active.cell(row = 5, column = interval).value = float(toFixed(TotalState['SWAP_Used'], 3))
+                book.active.cell(row = 6, column = interval).value = float(toFixed(TotalState['SWAP_Total'], 3))
+                book.active.cell(row = 7, column = interval).value = TotalState['SWAP_Used'] / TotalState['SWAP_Total']
+                book.active.cell(row = 7, column = interval).number_format = '0%'
 
-                print('SWAP Used: ' + str(TotalState['SWAP_Used']))
-                print('SWAP Total: ' + str(TotalState['SWAP_Total']))
+                book.active.cell(row = 8, column = interval).value = float(toFixed(TotalState['RAM_Used'], 3))
+                book.active.cell(row = 9, column = interval).value = TotalState['RAM_Total']
+                book.active.cell(row = 10, column = interval).value = TotalState['RAM_Used'] / TotalState['RAM_Total']
+                book.active.cell(row = 10, column = interval).number_format = '0%'
 
-                print('RAM Used: ' + str(TotalState['RAM_Used']))
-                print('RAM Total: ' + str(TotalState['RAM_Total']))
+                book.active.cell(row = 11, column = interval).value = round(float(TotalState['Processes_Total']))
+                book.active.cell(row = 12, column = interval).value = round(float(TotalState['Processes_Stopped']))
+                book.active.cell(row = 13, column = interval).value = round(float(TotalState['Processes_Sleeping']))
+                book.active.cell(row = 14, column = interval).value = round(float(TotalState['Processes_Running']))
+                book.active.cell(row = 15, column = interval).value = round(float(TotalState['Processes_Zombie']))
+                book.active.cell(row = 16, column = interval).value = float(toFixed(TotalState['system_LA1'], 3))
+                book.active.cell(row = 17, column = interval).value = float(toFixed(TotalState['system_LA5'], 3))
+                book.active.cell(row = 18, column = interval).value = float(toFixed(TotalState['system_LA15'], 3))
+                book.active.cell(row = 19, column = interval).value = float(toFixed(TotalState['system_IDLE'], 3))
+                book.active.cell(row = 20, column = interval).value = float(toFixed(TotalState['HDD_xvda1_Used'], 3))
+                book.active.cell(row = 21, column = interval).value = TotalState['HDD_xvda1_Total']
+                book.active.cell(row = 22, column = interval).value = TotalState['HDD_xvda1_Used'] / TotalState['HDD_xvda1_Total']
+                book.active.cell(row = 22, column = interval).number_format = '0%'
 
-                print('Proc. Total: ' + str(TotalState['Processes_Total']))
-                print('Proc. Stopped: ' + str(TotalState['Processes_Stopped']))
-                print('Proc. Sleeping: ' + str(TotalState['Processes_Sleeping']))
-                print('Proc. Running: ' + str(TotalState['Processes_Running']))
-                print('Proc. Zombie: ' + str(TotalState['Processes_Zombie']))
-
-                print('LA1: ' + str(TotalState['system_LA1']))
-                print('LA5: ' + str(TotalState['system_LA5']))
-                print('LA15: ' + str(TotalState['system_LA15']))
-                print('IDLE: ' + str(TotalState['system_IDLE']))
-
-                print('HDD (xvda1) Used: ' + str(TotalState['HDD_xvda1_Used']))
-
-                # если есть дополнительные поля
                 if (uName == device['webrobo']):
-                    print('HDD (xvda1) Total: ' + str(TotalState['HDD_xvda1_Total']))
-                    print('HDD (root) Used: ' + str(TotalState['HDD_vg-root_Used']))
-                    print('HDD (root) Total: ' + str(TotalState['HDD_vg-root_Total']) + '\n')
-                else:
-                    print('HDD (xvda1) Total: ' + str(TotalState['HDD_xvda1_Total']) + '\n')
+                    book.active.cell(row = 23, column = interval).value = float(toFixed(TotalState['HDD_vg-root_Used'], 3))
+                    book.active.cell(row = 24, column = interval).value = TotalState['HDD_vg-root_Total']
+                    book.active.cell(row = 25, column = interval).value = TotalState['HDD_vg-root_Used'] / TotalState['HDD_vg-root_Total']
+                    book.active.cell(row = 25, column = interval).number_format = '0%'
 
+                interval += 1
                 # занулить после вывода
                 for strr in TotalState.keys():
                     TotalState[strr] = 0
 
         GO_IN = False
+def Correct():
+    for i in range(5, 23):
+        book.active['P' + str(i)].value = book.active['O' + str(i)].value
+    book.active['P7'].number_format = '0%'
+    book.active['P10'].number_format = '0%'
+    book.active['P22'].number_format = '0%'
+
+def addToWeb():
+    book.active = 1
+    book.active.cell(row = 23, column = 2).value = 'HDD (root) Used'
+    book.active.cell(row = 23, column = 2).font = _bold
+    book.active.cell(row = 23, column = 2).border = _selfbord
+    book.active.cell(row = 24, column = 2).value = 'HDD (root) Total'
+    book.active.cell(row = 24, column = 2).font = _bold
+    book.active.cell(row = 24, column = 2).border = _selfbord
+    book.active.cell(row = 25, column = 2).value = 'HDD (root) %'
+    book.active.cell(row = 25, column = 2).font = _bold
+    book.active.cell(row = 25, column = 2).border = _selfbord
+    for i in range(2, 17):
+        for j in range(23, 26):
+            book.active.cell(row = j, column = i).alignment = Alignment(horizontal='center') # выравнивание по центру
+            book.active.cell(row = j, column = i).border = _selfbord # граница ячейки
+    book.active['P23'].value = book.active['O23'].value
+    book.active['P24'].value = book.active['O24'].value
+    book.active['P25'].value = book.active['O25'].value
+    book.active['P25'].number_format = '0%'
+
+# метод добавления ошибок с соответствующим сообщением
+def _addError(s_hour, s_min, str_Err):
+    ss_hour = str(s_hour)
+    s1_hour = str(s_hour + 1)
+    if int(s_hour) < 10:
+        ss_hour = '0' + str(s_hour)
+        s1_hour = '0' + str(s_hour + 1)
+        if int(s_hour) == 9:
+            s1_hour = str(s_hour + 1)
+    if (s_min >= 25 and s_min <= 30):
+        ErrorList.append(ss_hour + ':00 - ' + ss_hour + ':30 -> ' + str_Err)
+    elif (s_min >= 55 and s_min <= 59):
+        ErrorList.append(ss_hour + ':30 - ' + s1_hour + ':00 -> ' + str_Err)
+    return
+
+# вся обработка по открытии файла (.json)
+with open ("/Users/Gleb/Desktop/Python/log.json") as json_string:
+
+    # список ошибок (временные промежутки аномалий на сервере)
+    ErrorList = ['Time codes of anomaly: ']
+
+    #список названий типов сервера (как в original .json)
+    device = {'sev':'Сервер СЕВ', 'dbrobo':'Сервер dbrobo', 'webrobo':'Сервер webrobo', 'dokuwiki':'Сервер dokuwiki'}
+
+    # текущее состояние для вывода осредненных значений
+    TotalState = {'SWAP_Used':0, 'SWAP_Total':0, 'RAM_Used':0, 'RAM_Total':0,
+                  'Processes_Total':0, 'Processes_Stopped':0, 'Processes_Sleeping':0, 'Processes_Running':0, 'Processes_Zombie':0,
+                  'system_LA1':0, 'system_LA5':0, 'system_LA15':0, 'system_IDLE':0,
+                  'HDD_xvda1_Used':0, 'HDD_xvda1_Total':0,
+                  'HDD_vg-root_Used':0, 'HDD_vg-root_Total':0}
+
+    # словарь данных
+    data = json.load(json_string)
+
+    global i5               # записи во время, где число минут кратно 5
+    global ir               # все остальные записи с рандомным временем
+    global last_min     # последняя минута
+    global twice_5      # проверка на избыточные граничные записи
+    global twice        # проверка на дублирование записей в целом
+    global extra        # флаг допуска к условию пересчета и печати
+    global skip         # флаг обхода дополнительной проверки
+    global GO_IN        # флаг последнего вхождения для печати оставшейся информации
+    global am_pm        # перевод формата для перехода между диапазонами
+    global interval     # не ну это ты понял
+
+    i5 = 0              # записи во время, где число минут кратно 5
+    ir = 0              # все остальные записи с рандомным временем
+    last_min = 0
+    twice_5 = False     # проверка на избыточные граничные записи
+    twice = False       # проверка на дублирование записей в целом
+    extra = False       # флаг допуска к условию пересчета и печати
+    skip = False        # флаг обхода дополнительной проверки
+    GO_IN = False       # флаг последнего вхождения для печати оставшейся информации
+    am_pm = False       # перевод формата для перехода между диапазонами
+    interval = 3
+
+    # dbrobo
+    print('Старт обработки dbrobo')
+    startValues()
+    CoCycleOfVeryFastObrabotka('dbrobo', '01')
+    Correct()
+
+    # webrobo
+    print('Старт обработки webrobo')
+    startValues()
+    CoCycleOfVeryFastObrabotka('webrobo', '01')
+    Correct()
+    addToWeb()
+
+    # dokuwiki
+    print('Старт обработки dokurobo')
+    startValues()
+    CoCycleOfVeryFastObrabotka('dokuwiki', '01')
+    Correct()
+
+    # sev 1
+    print('Старт обработки sevrobo1')
+    startValues()
+    CoCycleOfVeryFastObrabotka('sev', '01')
+    Correct()
+
+    # sev 2
+    print('Старт обработки sevrobo2')
+    startValues()
+    CoCycleOfVeryFastObrabotka('sev', '02')
+    Correct()
+
+    # sev 3
+    print('Старт обработки sevrobo3')
+    startValues()
+    CoCycleOfVeryFastObrabotka('sev', '03')
+    Correct()
 
     # оформление и вывод списка ошибок
+    '''
     if (len(ErrorList) > 1):
         ErrorList.append('Конец списка ошибок.')
     else:
@@ -228,6 +367,7 @@ with open ("/Users/Gleb/Desktop/Python/log.json") as json_string:
 
     for list in ErrorList:
         print(list)
+    '''
 
-book.save('work.xlsx')
+book.save('res.xlsx')
 book.close()
