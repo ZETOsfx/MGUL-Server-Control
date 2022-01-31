@@ -67,12 +67,12 @@ def create_excel():
             cur_sheet.cell(row = 3, column = i).font = _bold # жирн. шрифт
 
         #-- ПЕРЕЧИСЛЕНИЕ ОБРАБАТЫВАЕМОЙ НАМИ ИНФОРМАЦИИ --
-        rows = ['Доступен', 'SWAP Used', 'SWAP_Total', 'SWAP %',
+        rows = ['Доступен', 'SWAP Used', 'SWAP Total', 'SWAP %',
                 'RAM Used', 'RAM Total', 'RAM %',
                 'Proc. Total', 'Proc. Stopped', 'Proc. Sleeping', 'Proc. Running', 'Proc. Zombie',
                 'LA1', 'LA5', 'LA15', 'IDLE',
-                'HDD (xvda1) Used', 'HDD (xvda1) Total',
-                'HDD (root) Used', 'HDD (root) Total']
+                'HDD (xvda1) Used', 'HDD (xvda1) Total', 'HDD (xvda1) %',
+                'HDD (root) Used', 'HDD (root) Total', 'HDD (root) %']
 
         #-- ЗАПИСЬ ИНФ. В СТОЛБЕЦ --
         for i, row in enumerate(rows, 1):
@@ -84,14 +84,10 @@ def create_excel():
 
         #-- УСТАНОВКА ГРАНИЦ --
         for i in range(3, 17):
-            for j in range(4, 24):
+            for j in range(4, 26):
                 cur_sheet.cell(row = j, column = i).alignment = Alignment(horizontal='center') # выравнивание по центру
                 cur_sheet.cell(row = j, column = i).border = _selfbord # граница ячейки
 
-        #-- УДАЛЯЕМ HDD (root) ЕСЛИ ЭТО НЕ WEBROBO --
-        #if not (uName == device['webrobo']):
-        #    cur_sheet['B21'] = ''
-        #    cur_sheet['B22'] = ''
 
         #-- ТЕСТ ЗАЛИВКИ ЕДИНИЧНО --
         #cur_sheet.cell(row = 7, column = 3).fill = _err
