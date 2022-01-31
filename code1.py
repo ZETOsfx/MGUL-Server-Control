@@ -1,4 +1,8 @@
 import json
+import booking
+
+# таблица для вывода
+book = booking.create_excel()
 
 # список ошибок (временные промежутки аномалий на сервере)
 ErrorList = ['Time codes of anomaly: ']
@@ -71,6 +75,7 @@ with open ("/Users/Gleb/Desktop/Python/log.json") as json_string:
                 extra = True
                 skip = True
                 twice_5 = False
+                i5 += 1
 
             # дублирование записей в промежутке времени
             twice = (last_min == min)
@@ -148,9 +153,9 @@ with open ("/Users/Gleb/Desktop/Python/log.json") as json_string:
 
                 twice_5 = False
                 if not GO_IN:
-                    if (i5 == 5) and (ir == 0):
+                    if (i5 == 6) and (ir == 0):
                         strErr = "Все в порядке."
-                        # _addError(hour, min, strErr) # check
+                        _addError(hour, min, strErr) # check
                     elif (i5 + ir == 5):
                         strErr = "Ненормальная работа: остановка или сбои в работе. Записи в нужном числе."
                         _addError(hour, min, strErr)
@@ -171,12 +176,17 @@ with open ("/Users/Gleb/Desktop/Python/log.json") as json_string:
 
                 # осреднение за 30 минут
                 for key in TotalState.keys():
-                    TotalState[key] /= (i5 + ir)
+                    if (i5 + ir <= 0):
+                        TotalState[key] = 0
+                    else:
+                        TotalState[key] /= (i5 + ir)
 
                 i5 = 0
                 ir = 0
 
                 # ----------------------------------------------------------------
+                # можно подправить вывод
+
                 print('SWAP Used: ' + str(TotalState['SWAP_Used']))
                 print('SWAP Total: ' + str(TotalState['SWAP_Total']))
 
@@ -218,3 +228,6 @@ with open ("/Users/Gleb/Desktop/Python/log.json") as json_string:
 
     for list in ErrorList:
         print(list)
+
+book.save('work.xlsx')
+book.close()
