@@ -3,6 +3,16 @@ import booking
 from openpyxl.styles import *
 from openpyxl.utils.cell import get_column_letter
 
+from progress.bar import IncrementalBar
+from PyQt5 import QtCore, QtWidgets
+
+
+# окно выбора файла
+app = QtWidgets.QApplication([])
+fileName = QtWidgets.QFileDialog.getOpenFileName()[0]
+# progress bar
+_bar = [1, 2, 3, 4, 5, 6]
+bar = IncrementalBar('SERVER STATE: ', max=len(_bar))
 
 # STYLE PREFABS
 # 1. fill
@@ -301,9 +311,27 @@ def Correct():              # поправка значений (преобра�
     for i in range(3, 17):
         book.active.cell(row=4, column=i).value = 'V'
         book.active.cell(row=4, column=i).fill = _ok
+
+        swap = book.active.cell(row=7, column=i).value
+        ram = book.active.cell(row=10, column=i).value
+        hdd = book.active.cell(row=22, column=i).value
+
+        _colorSelected(swap, 7, i)
+        _colorSelected(ram, 10, i)
+        _colorSelected(hdd, 22, i)
+
     book.active['P7'].number_format = '0%'
     book.active['P10'].number_format = '0%'
     book.active['P22'].number_format = '0%'
+
+
+def _colorSelected(_val, _line, _dex):      # метод окраса для назначимого параметра
+    if (0 <= _val < 0.65):
+        book.active.cell(row=_line, column=_dex).fill = _ok
+    elif (0.65 <= _val < 0.85):
+        book.active.cell(row=_line, column=_dex).fill = _warn
+    elif (0.85 <= _val < 1):
+        book.active.cell(row=_line, column=_dex).fill = _err
 
 
 def addToWeb():             # добавление дополнительных строк для webrobo
@@ -328,6 +356,10 @@ def addToWeb():             # добавление дополнительных 
     book.active['P25'].value = book.active['O25'].value
     book.active['P25'].number_format = '0%'
 
+    for i in range(3, 17):
+        hddroot = book.active.cell(row=25, column=i).value
+        _colorSelected(hddroot, 25, i)
+
 
 # метод добавления ошибок с соответствующим сообщением
 def _addError(s_hour, s_min, str_Err):
@@ -346,7 +378,7 @@ def _addError(s_hour, s_min, str_Err):
 
 
 # вся обработка по открытии файла (.json)
-with open("/Users/Gleb/Desktop/Python/log.json") as json_string:
+with open(fileName) as json_string:
 
     # список ошибок (временные промежутки аномалий на сервере)
     ErrorList = ['Time codes of anomaly: ']
@@ -362,67 +394,22 @@ with open("/Users/Gleb/Desktop/Python/log.json") as json_string:
                   'HDD_xvda1_Used': 0, 'HDD_xvda1_Total': 0,
                   'HDD_vg-root_Used': 0, 'HDD_vg-root_Total': 0}
 
+    strServer = (('dbrobo', '01'), ('webrobo', '01'), ('dokuwiki',
+                 '01'), ('sev', '01'), ('sev', '02'), ('sev', '03'))
+
     # словарь данных
     data = json.load(json_string)
-
-    global i5               # записи во время, где число минут кратно 5
-    global ir               # все остальные записи с рандомным временем
-    global last_min     # последняя минута
-    global twice_5      # проверка на избыточные граничные записи
-    global twice        # проверка на дублирование записей в целом
-    global extra        # флаг допуска к условию пересчета и печати
-    global skip         # флаг обхода дополнительной проверки
-    global GO_IN        # флаг последнего вхождения для печати оставшейся информации
-    global am_pm        # перевод формата для перехода между диапазонами
-    global interval     # не ну это ты понял
-
-    i5 = 0              # записи во время, где число минут кратно 5
-    ir = 0              # все остальные записи с рандомным временем
-    last_min = 0
-    twice_5 = False     # проверка на избыточные граничные записи
-    twice = False       # проверка на дублирование записей в целом
-    extra = False       # флаг допуска к условию пересчета и печати
-    skip = False        # флаг обхода дополнительной проверки
-    GO_IN = False       # флаг последнего вхождения для печати оставшейся информации
-    am_pm = False       # перевод формата для перехода между диапазонами
-    interval = 3
-
-    # dbrobo
-    print('Старт обработки dbrobo')
     startValues()
-    Processing('dbrobo', '01')
-    Correct()
 
-    # webrobo
-    print('Старт обработки webrobo')
-    startValues()
-    Processing('webrobo', '01')
-    Correct()
-    addToWeb()
+    for strData in strServer:
+        startValues()
+        Processing(strData[0], strData[1])
+        bar.next()
+        Correct()
+        if (strData[0] == 'webrobo'):
+            addToWeb()
 
-    # dokuwiki
-    print('Старт обработки dokurobo')
-    startValues()
-    Processing('dokuwiki', '01')
-    Correct()
-
-    # sev 1
-    print('Старт обработки sevrobo1')
-    startValues()
-    Processing('sev', '01')
-    Correct()
-
-    # sev 2
-    print('Старт обработки sevrobo2')
-    startValues()
-    Processing('sev', '02')
-    Correct()
-
-    # sev 3
-    print('Старт обработки sevrobo3')
-    startValues()
-    Processing('sev', '03')
-    Correct()
+    bar.finish()
 
     # оформление и вывод списка ошибок
     '''
@@ -434,6 +421,7 @@ with open("/Users/Gleb/Desktop/Python/log.json") as json_string:
     for list in ErrorList:
         print(list)
     '''
+
 
 book.save('res.xlsx')
 book.close()
