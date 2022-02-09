@@ -2,7 +2,7 @@
 
 ALPHA v1.3
 
-# USED PYTHON LIBRARIES:
+# USED PYTHON LYBRARIES:
 
 - PyQt5
 - openpyxl
