@@ -1,20 +1,32 @@
 import json
 import booking
-import openpyxl
 from openpyxl.styles import *
 from openpyxl.utils.cell import get_column_letter
 
-_bold = Font(name='Calibri', bold=True, size = 14, color = "000000")
-_selfbord = Border(left=Side(style='medium'), right=Side(style='medium'), top=Side(style='medium'), bottom=Side(style='medium'))
 
-# таблица для вывода
-book = booking.create_excel()
+# STYLE PREFABS
+# 1. fill
+_ok = PatternFill(start_color="d9ead3",
+                  end_color="d9ead3", fill_type="solid")   # зелёный
+_warn = PatternFill(start_color="fff2cc",
+                    end_color="fff2cc", fill_type="solid")  # жёлтый
+_err = PatternFill(start_color="f4cccc",
+                   end_color="f4cccc", fill_type="solid")   # красный
+# 2. font
+_bold = Font(name='Calibri', bold=True, size=14, color="000000")
+# 3. border
+_selfbord = Border(left=Side(style='medium'), right=Side(
+    style='medium'), top=Side(style='medium'), bottom=Side(style='medium'))  # Линия границы ячейки
 
-# АБОБА
-def toFixed(numObj, digits = 0):
+
+book = booking.create_excel()   # таблица для вывода
+
+
+def toFixed(numObj, digits=0):  # ограничение знаков после запятой
     return f"{numObj:.{digits}f}"
 
-def startValues():
+
+def startValues():          # начальные значения переменных для обработки
     global i5               # записи во время, где число минут кратно 5
     global ir               # все остальные записи с рандомным временем
     global last_min     # последняя минута
@@ -36,7 +48,9 @@ def startValues():
     GO_IN = False       # флаг последнего вхождения для печати оставшейся информации
     am_pm = False       # перевод формата для перехода между диапазонами
     interval = 3
-def CoCycleOfVeryFastObrabotka(_dev, _ser):
+
+
+def Processing(_dev, _ser):  # основной цикл обработки (универсальный для каждого сервера)
     global i5               # записи во время, где число минут кратно 5
     global ir               # все остальные записи с рандомным временем
     global last_min     # последняя минута
@@ -81,12 +95,15 @@ def CoCycleOfVeryFastObrabotka(_dev, _ser):
 
             # время записи (не для последнего вхождения)
             if not GO_IN:
-                hour = int(data[str(key)]['Date'][11] + data[str(key)]['Date'][12])
-                min = int(data[str(key)]['Date'][14] + data[str(key)]['Date'][15])
-                minNext = int(data[str(int(key) + 1)]['Date'][14] + data[str(int(key) + 1)]['Date'][15])
+                hour = int(data[str(key)]['Date'][11] +
+                           data[str(key)]['Date'][12])
+                min = int(data[str(key)]['Date'][14] +
+                          data[str(key)]['Date'][15])
+                minNext = int(data[str(int(key) + 1)]['Date']
+                              [14] + data[str(int(key) + 1)]['Date'][15])
 
             # срочная печать данных за интервал, который уже прошел
-            if (minNext >= 30 and am_pm == False) or (minNext < 30 and am_pm == True):
+            if (minNext >= 29 and am_pm == False) or (minNext < 29 and am_pm == True):
                 am_pm = not am_pm
                 extra = True
                 skip = True
@@ -120,18 +137,27 @@ def CoCycleOfVeryFastObrabotka(_dev, _ser):
                 # округление явно целых величин
                 # проверить повторно подсчет среднего значения
 
-                TotalState['SWAP_Used'] += int(data[str(key)]['data']['system_SWAP_Used'])
-                TotalState['SWAP_Total'] = int(data[str(key)]['data']['system_SWAP_Total'])
+                TotalState['SWAP_Used'] += int(data[str(key)]
+                                               ['data']['system_SWAP_Used'])
+                TotalState['SWAP_Total'] = int(
+                    data[str(key)]['data']['system_SWAP_Total'])
 
-                TotalState['RAM_Used'] += int(data[str(key)]['data']['system_RAM_Used'])
-                TotalState['RAM_Total'] = int(data[str(key)]['data']['system_RAM_Total'])
+                TotalState['RAM_Used'] += int(data[str(key)]
+                                              ['data']['system_RAM_Used'])
+                TotalState['RAM_Total'] = int(
+                    data[str(key)]['data']['system_RAM_Total'])
 
                 try:
-                    TotalState['Processes_Total'] += int(data[str(key)]['data']['system_Processes_Total'])
-                    TotalState['Processes_Stopped'] += int(data[str(key)]['data']['system_Processes_Stopped'])
-                    TotalState['Processes_Sleeping'] += int(data[str(key)]['data']['system_Processes_Sleeping'])
-                    TotalState['Processes_Running'] += int(data[str(key)]['data']['system_Processes_Running'])
-                    TotalState['Processes_Zombie'] += int(data[str(key)]['data']['system_Processes_Zombie'])
+                    TotalState['Processes_Total'] += int(
+                        data[str(key)]['data']['system_Processes_Total'])
+                    TotalState['Processes_Stopped'] += int(
+                        data[str(key)]['data']['system_Processes_Stopped'])
+                    TotalState['Processes_Sleeping'] += int(
+                        data[str(key)]['data']['system_Processes_Sleeping'])
+                    TotalState['Processes_Running'] += int(
+                        data[str(key)]['data']['system_Processes_Running'])
+                    TotalState['Processes_Zombie'] += int(
+                        data[str(key)]['data']['system_Processes_Zombie'])
                 except:
                     TotalState['Processes_Total'] += 0
                     TotalState['Processes_Stopped'] += 0
@@ -139,24 +165,32 @@ def CoCycleOfVeryFastObrabotka(_dev, _ser):
                     TotalState['Processes_Running'] += 0
                     TotalState['Processes_Zombie'] += 0
 
-                TotalState['system_LA1'] += float(data[str(key)]['data']['system_LA1'])
-                TotalState['system_LA5'] += float(data[str(key)]['data']['system_LA5'])
-                TotalState['system_LA15'] += float(data[str(key)]['data']['system_LA15'])
+                TotalState['system_LA1'] += float(data[str(key)]
+                                                  ['data']['system_LA1'])
+                TotalState['system_LA5'] += float(data[str(key)]
+                                                  ['data']['system_LA5'])
+                TotalState['system_LA15'] += float(
+                    data[str(key)]['data']['system_LA15'])
 
                 try:
-                    TotalState['system_IDLE'] += float(data[str(key)]['data']['system_IDLE'])
+                    TotalState['system_IDLE'] += float(
+                        data[str(key)]['data']['system_IDLE'])
                 except:
                     TotalState['system_IDLE'] += 100.0
 
-                TotalState['HDD_xvda1_Used'] += int(data[str(key)]['data']['system_HDD_xvda1_Used'])
-                TotalState['HDD_xvda1_Total'] = int(data[str(key)]['data']['system_HDD_xvda1_Total'])
+                TotalState['HDD_xvda1_Used'] += int(
+                    data[str(key)]['data']['system_HDD_xvda1_Used'])
+                TotalState['HDD_xvda1_Total'] = int(
+                    data[str(key)]['data']['system_HDD_xvda1_Total'])
 
                 # только для webrobo (дополнительные поля root)
                 if (uName == device['webrobo']):
-                    TotalState['HDD_vg-root_Used'] += int(data[str(key)]['data']['system_HDD_vg-root_Used'])
-                    TotalState['HDD_vg-root_Total'] = int(data[str(key)]['data']['system_HDD_vg-root_Total'])
+                    TotalState['HDD_vg-root_Used'] += int(
+                        data[str(key)]['data']['system_HDD_vg-root_Used'])
+                    TotalState['HDD_vg-root_Total'] = int(
+                        data[str(key)]['data']['system_HDD_vg-root_Total'])
 
-            #---------------------------------------------------------------------
+            # ---------------------------------------------------------------------
             if ((min == 25) or (min == 55)) or extra:  # вывод среднего за 30 минут
                 extra = False
                 twice_5 = True
@@ -170,14 +204,14 @@ def CoCycleOfVeryFastObrabotka(_dev, _ser):
                 if not GO_IN:
                     if (i5 == 6) and (ir == 0):
                         strErr = "Все в порядке."
-                        _addError(hour, min, strErr) # check
+                        _addError(hour, min, strErr)  # check
                     elif (i5 + ir == 5):
                         strErr = "Ненормальная работа: остановка или сбои в работе. Записи в нужном числе."
                         _addError(hour, min, strErr)
                     elif (i5 + ir < 5 and i5 + ir > 0):
                         strErr = "Остановка работы на некоторое время. Записи частично утеряны."
                         _addError(hour, min, strErr)
-                    elif i5 + ir == 0: # non work
+                    elif i5 + ir == 0:  # non work
                         strErr = "Сервер не работал."
                         _addError(hour, min, strErr)
 
@@ -187,7 +221,6 @@ def CoCycleOfVeryFastObrabotka(_dev, _ser):
                         strErr = "Присутствуют лишние записи: возможно, сервер был перезагружен."
                         _addError(hour, min, strErr)
                     twice = False
-
 
                 # осреднение за 30 минут
                 for key in TotalState.keys():
@@ -202,35 +235,57 @@ def CoCycleOfVeryFastObrabotka(_dev, _ser):
 
                 # ----------------------------------------------------------------
                 # можно подправить вывод
-                book.active.cell(row = 5, column = interval).value = float(toFixed(TotalState['SWAP_Used'], 3))
-                book.active.cell(row = 6, column = interval).value = float(toFixed(TotalState['SWAP_Total'], 3))
-                book.active.cell(row = 7, column = interval).value = TotalState['SWAP_Used'] / TotalState['SWAP_Total']
-                book.active.cell(row = 7, column = interval).number_format = '0%'
+                book.active.cell(row=5, column=interval).value = float(
+                    toFixed(TotalState['SWAP_Used'], 3))
+                book.active.cell(row=6, column=interval).value = float(
+                    toFixed(TotalState['SWAP_Total'], 3))
+                book.active.cell(
+                    row=7, column=interval).value = TotalState['SWAP_Used'] / TotalState['SWAP_Total']
+                book.active.cell(row=7, column=interval).number_format = '0%'
 
-                book.active.cell(row = 8, column = interval).value = float(toFixed(TotalState['RAM_Used'], 3))
-                book.active.cell(row = 9, column = interval).value = TotalState['RAM_Total']
-                book.active.cell(row = 10, column = interval).value = TotalState['RAM_Used'] / TotalState['RAM_Total']
-                book.active.cell(row = 10, column = interval).number_format = '0%'
+                book.active.cell(row=8, column=interval).value = float(
+                    toFixed(TotalState['RAM_Used'], 3))
+                book.active.cell(
+                    row=9, column=interval).value = TotalState['RAM_Total']
+                book.active.cell(
+                    row=10, column=interval).value = TotalState['RAM_Used'] / TotalState['RAM_Total']
+                book.active.cell(row=10, column=interval).number_format = '0%'
 
-                book.active.cell(row = 11, column = interval).value = round(float(TotalState['Processes_Total']))
-                book.active.cell(row = 12, column = interval).value = round(float(TotalState['Processes_Stopped']))
-                book.active.cell(row = 13, column = interval).value = round(float(TotalState['Processes_Sleeping']))
-                book.active.cell(row = 14, column = interval).value = round(float(TotalState['Processes_Running']))
-                book.active.cell(row = 15, column = interval).value = round(float(TotalState['Processes_Zombie']))
-                book.active.cell(row = 16, column = interval).value = float(toFixed(TotalState['system_LA1'], 3))
-                book.active.cell(row = 17, column = interval).value = float(toFixed(TotalState['system_LA5'], 3))
-                book.active.cell(row = 18, column = interval).value = float(toFixed(TotalState['system_LA15'], 3))
-                book.active.cell(row = 19, column = interval).value = float(toFixed(TotalState['system_IDLE'], 3))
-                book.active.cell(row = 20, column = interval).value = float(toFixed(TotalState['HDD_xvda1_Used'], 3))
-                book.active.cell(row = 21, column = interval).value = TotalState['HDD_xvda1_Total']
-                book.active.cell(row = 22, column = interval).value = TotalState['HDD_xvda1_Used'] / TotalState['HDD_xvda1_Total']
-                book.active.cell(row = 22, column = interval).number_format = '0%'
+                book.active.cell(row=11, column=interval).value = round(
+                    float(TotalState['Processes_Total']))
+                book.active.cell(row=12, column=interval).value = round(
+                    float(TotalState['Processes_Stopped']))
+                book.active.cell(row=13, column=interval).value = round(
+                    float(TotalState['Processes_Sleeping']))
+                book.active.cell(row=14, column=interval).value = round(
+                    float(TotalState['Processes_Running']))
+                book.active.cell(row=15, column=interval).value = round(
+                    float(TotalState['Processes_Zombie']))
+                book.active.cell(row=16, column=interval).value = float(
+                    toFixed(TotalState['system_LA1'], 3))
+                book.active.cell(row=17, column=interval).value = float(
+                    toFixed(TotalState['system_LA5'], 3))
+                book.active.cell(row=18, column=interval).value = float(
+                    toFixed(TotalState['system_LA15'], 3))
+                book.active.cell(row=19, column=interval).value = float(
+                    toFixed(TotalState['system_IDLE'], 3))
+                book.active.cell(row=20, column=interval).value = float(
+                    toFixed(TotalState['HDD_xvda1_Used'], 3))
+                book.active.cell(
+                    row=21, column=interval).value = TotalState['HDD_xvda1_Total']
+                book.active.cell(
+                    row=22, column=interval).value = TotalState['HDD_xvda1_Used'] / TotalState['HDD_xvda1_Total']
+                book.active.cell(row=22, column=interval).number_format = '0%'
 
                 if (uName == device['webrobo']):
-                    book.active.cell(row = 23, column = interval).value = float(toFixed(TotalState['HDD_vg-root_Used'], 3))
-                    book.active.cell(row = 24, column = interval).value = TotalState['HDD_vg-root_Total']
-                    book.active.cell(row = 25, column = interval).value = TotalState['HDD_vg-root_Used'] / TotalState['HDD_vg-root_Total']
-                    book.active.cell(row = 25, column = interval).number_format = '0%'
+                    book.active.cell(row=23, column=interval).value = float(
+                        toFixed(TotalState['HDD_vg-root_Used'], 3))
+                    book.active.cell(
+                        row=24, column=interval).value = TotalState['HDD_vg-root_Total']
+                    book.active.cell(
+                        row=25, column=interval).value = TotalState['HDD_vg-root_Used'] / TotalState['HDD_vg-root_Total']
+                    book.active.cell(
+                        row=25, column=interval).number_format = '0%'
 
                 interval += 1
                 # занулить после вывода
@@ -238,32 +293,41 @@ def CoCycleOfVeryFastObrabotka(_dev, _ser):
                     TotalState[strr] = 0
 
         GO_IN = False
-def Correct():
+
+
+def Correct():              # поправка значений (преобразование для отображения %)
     for i in range(5, 23):
         book.active['P' + str(i)].value = book.active['O' + str(i)].value
+    for i in range(3, 17):
+        book.active.cell(row=4, column=i).value = 'V'
+        book.active.cell(row=4, column=i).fill = _ok
     book.active['P7'].number_format = '0%'
     book.active['P10'].number_format = '0%'
     book.active['P22'].number_format = '0%'
 
-def addToWeb():
+
+def addToWeb():             # добавление дополнительных строк для webrobo
     book.active = 1
-    book.active.cell(row = 23, column = 2).value = 'HDD (root) Used'
-    book.active.cell(row = 23, column = 2).font = _bold
-    book.active.cell(row = 23, column = 2).border = _selfbord
-    book.active.cell(row = 24, column = 2).value = 'HDD (root) Total'
-    book.active.cell(row = 24, column = 2).font = _bold
-    book.active.cell(row = 24, column = 2).border = _selfbord
-    book.active.cell(row = 25, column = 2).value = 'HDD (root) %'
-    book.active.cell(row = 25, column = 2).font = _bold
-    book.active.cell(row = 25, column = 2).border = _selfbord
+    book.active.cell(row=23, column=2).value = 'HDD (root) Used'
+    book.active.cell(row=23, column=2).font = _bold
+    book.active.cell(row=23, column=2).border = _selfbord
+    book.active.cell(row=24, column=2).value = 'HDD (root) Total'
+    book.active.cell(row=24, column=2).font = _bold
+    book.active.cell(row=24, column=2).border = _selfbord
+    book.active.cell(row=25, column=2).value = 'HDD (root) %'
+    book.active.cell(row=25, column=2).font = _bold
+    book.active.cell(row=25, column=2).border = _selfbord
     for i in range(2, 17):
         for j in range(23, 26):
-            book.active.cell(row = j, column = i).alignment = Alignment(horizontal='center') # выравнивание по центру
-            book.active.cell(row = j, column = i).border = _selfbord # граница ячейки
+            book.active.cell(row=j, column=i).alignment = Alignment(
+                horizontal='center')  # выравнивание по центру
+            # граница ячейки
+            book.active.cell(row=j, column=i).border = _selfbord
     book.active['P23'].value = book.active['O23'].value
     book.active['P24'].value = book.active['O24'].value
     book.active['P25'].value = book.active['O25'].value
     book.active['P25'].number_format = '0%'
+
 
 # метод добавления ошибок с соответствующим сообщением
 def _addError(s_hour, s_min, str_Err):
@@ -280,21 +344,23 @@ def _addError(s_hour, s_min, str_Err):
         ErrorList.append(ss_hour + ':30 - ' + s1_hour + ':00 -> ' + str_Err)
     return
 
+
 # вся обработка по открытии файла (.json)
-with open ("/Users/Gleb/Desktop/Python/log.json") as json_string:
+with open("/Users/Gleb/Desktop/Python/log.json") as json_string:
 
     # список ошибок (временные промежутки аномалий на сервере)
     ErrorList = ['Time codes of anomaly: ']
 
-    #список названий типов сервера (как в original .json)
-    device = {'sev':'Сервер СЕВ', 'dbrobo':'Сервер dbrobo', 'webrobo':'Сервер webrobo', 'dokuwiki':'Сервер dokuwiki'}
+    # список названий типов сервера (как в original .json)
+    device = {'sev': 'Сервер СЕВ', 'dbrobo': 'Сервер dbrobo',
+              'webrobo': 'Сервер webrobo', 'dokuwiki': 'Сервер dokuwiki'}
 
     # текущее состояние для вывода осредненных значений
-    TotalState = {'SWAP_Used':0, 'SWAP_Total':0, 'RAM_Used':0, 'RAM_Total':0,
-                  'Processes_Total':0, 'Processes_Stopped':0, 'Processes_Sleeping':0, 'Processes_Running':0, 'Processes_Zombie':0,
-                  'system_LA1':0, 'system_LA5':0, 'system_LA15':0, 'system_IDLE':0,
-                  'HDD_xvda1_Used':0, 'HDD_xvda1_Total':0,
-                  'HDD_vg-root_Used':0, 'HDD_vg-root_Total':0}
+    TotalState = {'SWAP_Used': 0, 'SWAP_Total': 0, 'RAM_Used': 0, 'RAM_Total': 0,
+                  'Processes_Total': 0, 'Processes_Stopped': 0, 'Processes_Sleeping': 0, 'Processes_Running': 0, 'Processes_Zombie': 0,
+                  'system_LA1': 0, 'system_LA5': 0, 'system_LA15': 0, 'system_IDLE': 0,
+                  'HDD_xvda1_Used': 0, 'HDD_xvda1_Total': 0,
+                  'HDD_vg-root_Used': 0, 'HDD_vg-root_Total': 0}
 
     # словарь данных
     data = json.load(json_string)
@@ -324,38 +390,38 @@ with open ("/Users/Gleb/Desktop/Python/log.json") as json_string:
     # dbrobo
     print('Старт обработки dbrobo')
     startValues()
-    CoCycleOfVeryFastObrabotka('dbrobo', '01')
+    Processing('dbrobo', '01')
     Correct()
 
     # webrobo
     print('Старт обработки webrobo')
     startValues()
-    CoCycleOfVeryFastObrabotka('webrobo', '01')
+    Processing('webrobo', '01')
     Correct()
     addToWeb()
 
     # dokuwiki
     print('Старт обработки dokurobo')
     startValues()
-    CoCycleOfVeryFastObrabotka('dokuwiki', '01')
+    Processing('dokuwiki', '01')
     Correct()
 
     # sev 1
     print('Старт обработки sevrobo1')
     startValues()
-    CoCycleOfVeryFastObrabotka('sev', '01')
+    Processing('sev', '01')
     Correct()
 
     # sev 2
     print('Старт обработки sevrobo2')
     startValues()
-    CoCycleOfVeryFastObrabotka('sev', '02')
+    Processing('sev', '02')
     Correct()
 
     # sev 3
     print('Старт обработки sevrobo3')
     startValues()
-    CoCycleOfVeryFastObrabotka('sev', '03')
+    Processing('sev', '03')
     Correct()
 
     # оформление и вывод списка ошибок
