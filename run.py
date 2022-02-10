@@ -249,16 +249,20 @@ def Processing(_dev, _ser):  # основной цикл обработки (у�
                     toFixed(TotalState['SWAP_Used'], 3))
                 book.active.cell(row=6, column=interval).value = float(
                     toFixed(TotalState['SWAP_Total'], 3))
-                book.active.cell(
-                    row=7, column=interval).value = TotalState['SWAP_Used'] / TotalState['SWAP_Total']
+                try:
+                    book.active.cell(row=7, column=interval).value = TotalState['SWAP_Used'] / TotalState['SWAP_Total']
+                except:
+                    book.active.cell(row=7, column=interval).value = 0
                 book.active.cell(row=7, column=interval).number_format = '0%'
 
                 book.active.cell(row=8, column=interval).value = float(
                     toFixed(TotalState['RAM_Used'], 3))
                 book.active.cell(
                     row=9, column=interval).value = TotalState['RAM_Total']
-                book.active.cell(
-                    row=10, column=interval).value = TotalState['RAM_Used'] / TotalState['RAM_Total']
+                try:
+                    book.active.cell(row=10, column=interval).value = TotalState['RAM_Used'] / TotalState['RAM_Total']
+                except:
+                    book.active.cell(row=10, column=interval).value = 0
                 book.active.cell(row=10, column=interval).number_format = '0%'
 
                 book.active.cell(row=11, column=interval).value = round(
@@ -283,8 +287,11 @@ def Processing(_dev, _ser):  # основной цикл обработки (у�
                     toFixed(TotalState['HDD_xvda1_Used'], 3))
                 book.active.cell(
                     row=21, column=interval).value = TotalState['HDD_xvda1_Total']
-                book.active.cell(
-                    row=22, column=interval).value = TotalState['HDD_xvda1_Used'] / TotalState['HDD_xvda1_Total']
+                try:
+                    book.active.cell(
+                        row=22, column=interval).value = TotalState['HDD_xvda1_Used'] / TotalState['HDD_xvda1_Total']
+                except:
+                    book.active.cell(row=22, column=interval).value = 0
                 book.active.cell(row=22, column=interval).number_format = '0%'
 
                 if (uName == device['webrobo']):
@@ -292,10 +299,12 @@ def Processing(_dev, _ser):  # основной цикл обработки (у�
                         toFixed(TotalState['HDD_vg-root_Used'], 3))
                     book.active.cell(
                         row=24, column=interval).value = TotalState['HDD_vg-root_Total']
-                    book.active.cell(
-                        row=25, column=interval).value = TotalState['HDD_vg-root_Used'] / TotalState['HDD_vg-root_Total']
-                    book.active.cell(
-                        row=25, column=interval).number_format = '0%'
+                    try:
+                        book.active.cell(
+                            row=25, column=interval).value = TotalState['HDD_vg-root_Used'] / TotalState['HDD_vg-root_Total']
+                    except:
+                        book.active.cell(row=25, column=interval).value = 0
+                    book.active.cell(row=25, column=interval).number_format = '0%'
 
                 interval += 1
                 # занулить после вывода

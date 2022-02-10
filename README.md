@@ -17,7 +17,7 @@ $ sudo pip3 install /name
        1) $ git clone https://github.com/ZETOsfx/MGUL-Server-Control
        2) $ cd MGUL-Server-Control
        3) $ python3 run.py
-       4) Select (.json) file
+       4) Select (.json) log file (09:00 - 16:00)
 
 PROGRAM OUTPUT: res.xlxs - Contains result border with SOME LISTS FOR ALL SERVERS.
 
