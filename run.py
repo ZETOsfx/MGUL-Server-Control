@@ -315,8 +315,9 @@ def Processing(_dev, _ser):  # основной цикл обработки (у�
 
 
 def Correct():              # поправка значений (преобразование для отображения %)
-    for i in range(5, 23):
+    for i in range(5, 27):
         book.active['P' + str(i)].value = book.active['O' + str(i)].value
+        book.active['C' + str(i)].value = book.active['D' + str(i)].value
     for i in range(3, 17):
         book.active.cell(row=4, column=i).value = 'V'
         book.active.cell(row=4, column=i).fill = _ok
