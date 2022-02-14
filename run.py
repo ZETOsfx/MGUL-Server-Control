@@ -394,8 +394,8 @@ with open(fileName) as json_string:
     ErrorList = ['Time codes of anomaly: ']
 
     # список названий типов сервера (как в original .json)
-    device = {'sev': 'Сервер СЕВ', 'dbrobo': 'Сервер dbrobo',
-              'webrobo': 'Сервер webrobo', 'dokuwiki': 'Сервер dokuwiki'}
+    device = {'sev': u'Сервер СЕВ', 'dbrobo': u'Сервер dbrobo',
+              'webrobo': u'Сервер webrobo', 'dokuwiki': u'Сервер dokuwiki'}
 
     # текущее состояние для вывода осредненных значений
     TotalState = {'SWAP_Used': 0, 'SWAP_Total': 0, 'RAM_Used': 0, 'RAM_Total': 0,

@@ -10,12 +10,12 @@ def create_excel():
     book.remove(book.active)  # удаляем созданный по умолчанию лист
 
     # -- СОЗДАЁМ СТРАНИЦЫ EXCEL --
-    sheet_dbrobo = book.create_sheet('Сервер dbrobo', 0)  # Будет первой
-    sheet_webrobo = book.create_sheet('Сервер webrobo', 1)  # Второй
-    sheet_dokuwiki = book.create_sheet('Сервер dokuwiki', 2)
-    sheet_CEB1 = book.create_sheet('Сервер СЕВ (01)', 3)
-    sheet_CEB2 = book.create_sheet('Сервер СЕВ (02)', 4)
-    sheet_CEB3 = book.create_sheet('Сервер СЕВ (03)', 5)
+    sheet_dbrobo = book.create_sheet(u'Сервер dbrobo', 0)  # Будет первой
+    sheet_webrobo = book.create_sheet(u'Сервер webrobo', 1)  # Второй
+    sheet_dokuwiki = book.create_sheet(u'Сервер dokuwiki', 2)
+    sheet_CEB1 = book.create_sheet(u'Сервер СЕВ (01)', 3)
+    sheet_CEB2 = book.create_sheet(u'Сервер СЕВ (02)', 4)
+    sheet_CEB3 = book.create_sheet(u'Сервер СЕВ (03)', 5)
 
     for sheet in range(0, 6):
         book.active = sheet
@@ -82,7 +82,7 @@ def create_excel():
             cur_sheet.cell(row=3, column=i).font = _bold  # жирн. шрифт
 
         # -- ПЕРЕЧИСЛЕНИЕ ОБРАБАТЫВАЕМОЙ НАМИ ИНФОРМАЦИИ --
-        rows = ['Доступен', 'SWAP Used', 'SWAP Total', 'SWAP %',
+        rows = [u'Доступен', 'SWAP Used', 'SWAP Total', 'SWAP %',
                 'RAM Used', 'RAM Total', 'RAM %',
                 'Proc. Total', 'Proc. Stopped', 'Proc. Sleeping', 'Proc. Running', 'Proc. Zombie',
                 'LA1', 'LA5', 'LA15', 'IDLE',
