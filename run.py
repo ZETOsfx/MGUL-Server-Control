@@ -14,7 +14,7 @@ fileName = QtWidgets.QFileDialog.getOpenFileName()[0]
 _bar = [1, 2, 3, 4, 5, 6]
 bar = IncrementalBar('SERVER STATE: ', max=len(_bar))
 
-# STYLE PREFABS
+# -- СТИЛИЗАЦИЯ (локально) --
 # 1. fill
 _ok = PatternFill(start_color="d9ead3",
                   end_color="d9ead3", fill_type="solid")   # зелёный

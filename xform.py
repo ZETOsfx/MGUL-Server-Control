@@ -3,7 +3,7 @@ from openpyxl.styles import *
 from openpyxl.utils.cell import get_column_letter
 
 # Создание xlsx файла сразу с шаблоном для одной страницы
-
+# ВЫНЕСТИ СТИЛИЗАЦИЮ В ЛОКАЛЬНЫЙ ФАЙЛ (для остальных скриптов - кроме xForm.py)
 
 def create_excel():
     book = openpyxl.Workbook()  # создаём книгу
@@ -33,19 +33,12 @@ def create_excel():
         # Отдлеьно для столбца с названиями
         cur_sheet.column_dimensions['B'].width = 25
 
-        # -- СТИЛИЗАЦИЯ --
-        # Цвет заливки ячейки
-        _ok = PatternFill(start_color="d9ead3",
-                          end_color="d9ead3", fill_type="solid")  # зелёный
-        _warn = PatternFill(start_color="fff2cc",
-                            end_color="fff2cc", fill_type="solid")  # жёлтый
-        _err = PatternFill(start_color="f4cccc",
-                           end_color="f4cccc", fill_type="solid")  # красный
+        # -- СТИЛИЗАЦИЯ PRESETS --
+       
         # Жирый шрифт
         global _bold
         _bold = Font(name='Calibri', bold=True, size=14, color="000000")
         # Линия границы ячейки
-        #_selfbord = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
         global _selfbord
         _selfbord = Border(left=Side(style='medium'), right=Side(
             style='medium'), top=Side(style='medium'), bottom=Side(style='medium'))
@@ -106,5 +99,4 @@ def create_excel():
                     horizontal='center')  # выравнивание по центру
                 # граница ячейки
                 cur_sheet.cell(row=j, column=i).border = _selfbord
-
     return book
